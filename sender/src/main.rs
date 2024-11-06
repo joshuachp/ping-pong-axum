@@ -1,20 +1,41 @@
-use std::{net::IpAddr, pin::pin, str::FromStr};
+use std::{collections::HashMap, net::IpAddr, ops::Deref, pin::pin, str::FromStr, sync::Arc};
 
 use axum::{
+    extract::State,
     http::StatusCode,
     response::{Html, IntoResponse},
-    routing::get,
+    routing::{get, post},
     Router,
 };
 use axum_extra::{headers::ContentType, TypedHeader};
 use cfg_if::cfg_if;
 use clap::{builder::ValueParser, Parser};
+use reqwest::Url;
 use tokio::{net::TcpListener, signal::unix::SignalKind};
 use tower_http::trace::TraceLayer;
 use tracing::{error, info};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
+use uuid::Uuid;
 
-const LOG_LEVEL: &str = "hello_world_axum=info,tower_http=debug";
+const LOG_LEVEL: &str = "sender=info,tower_http=debug";
+
+#[derive(Debug, Clone)]
+struct AppState {
+    shared: Arc<AppStateShared>,
+}
+
+impl Deref for AppState {
+    type Target = AppStateShared;
+
+    fn deref(&self) -> &Self::Target {
+        &self.shared
+    }
+}
+
+#[derive(Debug)]
+struct AppStateShared {
+    receiver: Url,
+}
 
 #[derive(Debug)]
 enum AppError {
@@ -46,16 +67,33 @@ async fn index() -> Html<&'static str> {
     Html(include_str!("../templates/index.html"))
 }
 
+async fn send_ping(State(state): State<AppState>) -> Result<StatusCode, AppError> {
+    let client = reqwest::Client::new();
+
+    let mut body = HashMap::with_capacity(1);
+    body.insert("id", Uuid::new_v4());
+
+    client
+        .post(state.receiver.clone())
+        .json(&body)
+        .send()
+        .await?
+        .error_for_status()?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
 async fn favicon_ico() -> Result<(TypedHeader<ContentType>, &'static [u8]), AppError> {
     let header = TypedHeader(ContentType::from_str("image/x-icon")?);
 
     Ok((header, include_bytes!("../../assets/favicon.ico")))
 }
 
-fn app() -> Router {
+fn app() -> Router<AppState> {
     Router::new()
         .route("/", get(index))
         .route("/favicon.ico", get(favicon_ico))
+        .route("/send-ping", post(send_ping))
 }
 
 #[derive(Debug, Clone, Parser)]
@@ -67,6 +105,9 @@ struct Cli {
     /// Port to listen on
     #[arg(default_value = "9000")]
     port: u16,
+    /// Url of the receiver internal port
+    #[arg(default_value = "http://receiver:9000")]
+    receiver: Url,
 }
 
 #[tokio::main]
@@ -84,7 +125,13 @@ async fn main() -> eyre::Result<()> {
 
     info!("listening on http://{}", listener.local_addr()?);
 
-    let app = app().layer(TraceLayer::new_for_http());
+    let app = app()
+        .layer(TraceLayer::new_for_http())
+        .with_state(AppState {
+            shared: Arc::new(AppStateShared {
+                receiver: cli.receiver,
+            }),
+        });
 
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())

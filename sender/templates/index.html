@@ -7,8 +7,8 @@
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
 
-    <title>Hello - Rust</title>
-    <meta name="description" content="Hello world Rust web server" />
+    <title>Sender - Rust</title>
+    <meta name="description" content="Sender Rust web server" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 
     <style>
@@ -16,10 +16,19 @@
         font-family: sans-serif;
       }
     </style>
+    <script type="module">
+      const button = document.querySelector("#ping-btn");
+      button.onclick(() => {
+        fetch("/send-ping", {
+          method: "POST",
+        });
+      });
+    </script>
   </head>
   <body>
     <main>
-      <h1>Hello from Rust</h1>
+      <h1>Sender</h1>
+      <button id="ping-btn">Ping</button>
     </main>
   </body>
 </html>

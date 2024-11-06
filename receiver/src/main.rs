@@ -14,7 +14,7 @@ use tower_http::trace::TraceLayer;
 use tracing::{error, info};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
-const LOG_LEVEL: &str = "hello_world_axum=info,tower_http=debug";
+const LOG_LEVEL: &str = "receiver=info,tower_http=debug";
 
 #[derive(Debug)]
 enum AppError {
