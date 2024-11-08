@@ -2,4 +2,5 @@
 
 set -exEuo pipefail
 
-docker build -f docker/Dockerfile .
+docker build -t sender -f docker/sender/Dockerfile .
+docker build -t receiver -f docker/receiver/Dockerfile .

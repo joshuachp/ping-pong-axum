@@ -18,11 +18,17 @@
     </style>
     <script type="module">
       const button = document.querySelector("#ping-btn");
-      button.onclick(() => {
+      button.onclick = () => {
         fetch("/send-ping", {
           method: "POST",
-        });
-      });
+        })
+          .then((res) => {
+            console.log(res);
+          })
+          .catch((err) => {
+            console.error(err);
+          });
+      };
     </script>
   </head>
   <body>

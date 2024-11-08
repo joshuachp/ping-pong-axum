@@ -16,10 +16,28 @@
         font-family: sans-serif;
       }
     </style>
+    <script type="module">
+      const count = document.querySelector("#count");
+      const socket = new WebSocket("/events");
+      socket.onopen = (event) => {
+        console.log("Connected");
+      };
+      socket.onclose = (event) => {
+        console.log("Disconnected");
+      };
+      socket.onerror = (event) => {
+        console.error("Disconnected");
+      };
+      socket.onmessage = (event) => {
+        console.log("Message from server ", event.data);
+        count.textContent = event.data.toString();
+      };
+    </script>
   </head>
   <body>
     <main>
-      <h1>Hello from Rust</h1>
+      <h1>Receiver</h1>
+      <p>Count: <span id="count">0</span></p>
     </main>
   </body>
 </html>

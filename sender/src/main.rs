@@ -100,13 +100,13 @@ fn app() -> Router<AppState> {
 #[clap(name = env!("CARGO_PKG_NAME"), about, version)]
 struct Cli {
     /// Address to listen on
-    #[arg(default_value = "127.0.0.1", value_parser= ValueParser::new(IpAddr::from_str) )]
+    #[arg(long, default_value = "127.0.0.1", value_parser= ValueParser::new(IpAddr::from_str) )]
     address: IpAddr,
     /// Port to listen on
-    #[arg(default_value = "9000")]
+    #[arg(short, default_value = "9000")]
     port: u16,
     /// Url of the receiver internal port
-    #[arg(default_value = "http://receiver:9000")]
+    #[arg(long, default_value = "http://receiver:9001")]
     receiver: Url,
 }
 
